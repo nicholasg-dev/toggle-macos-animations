@@ -1,13 +1,94 @@
 #!/bin/bash
 
-# tune_macos_performance.sh
-# This script tunes macOS for ultimate performance for AI/ML developers.
-# It applies various system optimizations based on the Product Requirements Document.
+# ======================================================================
+# tune_macos_performance.sh - macOS Performance Optimization Script
+# ======================================================================
+#
+# Description:
+#   This script is designed to optimize macOS systems specifically for AI/ML
+#   development workloads. It applies various system-level optimizations
+#   that can significantly improve performance for compute-intensive tasks.
+#
+# Features:
+#   - UI/UX optimizations (reduces animations and visual effects)
+#   - CPU and memory management tweaks
+#   - Network and storage optimizations
+#   - GPU configuration for ML workloads
+#   - Python environment optimizations
+#   - System maintenance recommendations
+#
+# Requirements:
+#   - macOS 10.15 (Catalina) or later
+#   - Administrator privileges (for system-level changes)
+#   - Homebrew (for some optimizations)
+#
+# Usage:
+#   ./tune_macos_performance.sh [--apply|--backup|--restore|--help]
+#
+# Note:
+#   - Always create a backup before applying changes
+#   - Some changes may require a restart to take effect
+#   - Review all changes before applying in production environments
+#
+# Author: Nicholas G
+# Version: 1.0.0
+# Last Updated: 2025-05-26
+# ======================================================================
 
-# --- Configuration ---
-LOG_FILE="/tmp/tune_macos_performance.log"
-BACKUP_DIR="${HOME}/.macos_performance_backup"
-BACKUP_FILE="${BACKUP_DIR}/defaults_backup_$(date '+%Y%m%d_%H%M%S').plist"
+# Function to optimize CPU management (disabling some services)
+optimize_cpu_management() {
+    log_info "Optimizing CPU management by disabling some unnecessary services..."
+    log_warn "Disabling system services can have unintended side effects. Proceed with caution."
+
+    # Disable Time Machine local snapshots (if not using Time Machine regularly)
+    # Local snapshots can consume significant CPU and disk I/O
+    log_info "Disabling Time Machine local snapshots..."
+    sudo tmutil disablelocal &>/dev/null
+    
+    # Disable App Nap for all applications
+    # App Nap can throttle background applications to save power
+    log_info "Disabling App Nap system-wide..."
+    defaults write NSGlobalDomain NSAppSleepDisabled -bool YES
+    
+    # Disable automatic termination of inactive apps
+    log_info "Preventing system from terminating inactive apps..."
+    defaults write NSGlobalDomain NSDisableAutomaticTermination -bool true
+    
+    # ===========================================================================
+    # Timer Coalescing Optimization
+    # ===========================================================================
+    # Purpose: Disables timer coalescing to reduce latency for time-sensitive tasks
+    #
+    # What it does:
+    # - Timer coalescing is a power-saving feature that groups multiple timer events
+    #   together to reduce CPU wake-ups, improving battery life
+    # - Setting kern.timer.coalescing_enabled=0 disables this feature, causing
+    #   timer events to be processed immediately when they occur
+    #
+    # When to enable this:
+    # - Running latency-sensitive applications (audio production, real-time systems)
+    # - AI/ML workloads requiring precise timing
+    # - Development environments where maximum responsiveness is preferred
+    #
+    # Benefits:
+    # - Reduces input/output latency
+    # - Improves application responsiveness
+    # - Provides more consistent performance for time-sensitive operations
+    # - Can improve performance for applications that rely on precise timing
+    #
+    # Drawbacks:
+    # - Increases power consumption (reduces battery life on laptops)
+    # - May generate more heat under load
+    # - Default macOS behavior is optimized for balanced performance/battery life
+    #
+    # Default value: 1 (enabled)
+    # Recommended: 0 for performance-critical workstations, 1 for laptops on battery
+    # ===========================================================================
+    log_info "Disabling timer coalescing for better performance (kern.timer.coalescing_enabled=0)..."
+    sudo sysctl -w kern.timer.coalescing_enabled=0
+    
+    log_success "CPU management optimizations applied."
+    log_info "Note: Some changes may require a restart to take full effect."
 
 # --- Logging Functions ---
 log_info() {
@@ -168,8 +249,8 @@ optimize_cpu_management() {
     # Disable Time Machine local snapshots (if not using Time Machine regularly)
     log_info "Disabling Time Machine local snapshots..."
     sudo tmutil disablelocal &>/dev/null
+    
     log_success "Time Machine local snapshots disabled."
-
     log_success "CPU management optimizations applied."
 }
 
@@ -178,19 +259,40 @@ optimize_memory_management() {
     log_info "Optimizing memory management..."
 
     # Clear inactive memory and purge disk caches
+    # This is particularly useful before running memory-intensive tasks
     log_info "Purging inactive memory and disk caches..."
     sudo purge &>/dev/null
     log_success "Inactive memory and disk caches purged."
 
-    log_info "Understanding and improving memory compression settings:"
-    log_info "  - macOS automatically manages memory compression (compressed memory) to free up RAM by compressing inactive pages."
-    log_info "  - This is a kernel-level feature and generally performs optimally without user intervention."
-    log_info "  - Direct user-configurable settings for 'improving' memory compression are limited and often not recommended."
-    log_info "  - You can observe memory compression activity in Activity Monitor (Memory tab, 'Compressed' value)."
-    log_info "  - While there's a 'sysctl vm.compressor_mode' setting, changing it is generally not advised as it can lead to instability."
-    log_info "  - The 'purge' command helps by clearing inactive memory, which can reduce the need for memory compression or swap."
+    # Memory compression settings
+    log_info "Configuring memory compression settings..."
+    
+    # Display current memory pressure and compression stats
+    log_info "Current memory pressure status:"
+    memory_pressure -q
+    
+    # Optimize swap usage
+    log_info "Configuring swap usage for better performance..."
+    sudo sysctl -w vm.compressor_mode=4  # More aggressive compression
+    
+    # Increase shared memory limits (useful for Python multiprocessing)
+    log_info "Increasing shared memory limits..."
+    sudo sysctl -w kern.sysv.shmmax=4194304000  # 4GB
+    sudo sysctl -w kern.sysv.shmall=1024000
+    
+    # Disable memory pressure notifications that can cause app throttling
+    log_info "Disabling memory pressure notifications..."
+    sudo sysctl -w kern.memorystatus_use_pressure=0
+    
+    # Documentation about memory management
+    log_info "Memory Management Notes:"
+    log_info "  - macOS uses a sophisticated memory management system with compression"
+    log_info "  - The 'purge' command clears disk caches and inactive memory"
+    log_info "  - Memory compression helps prevent swapping to disk"
+    log_info "  - Monitor memory pressure using Activity Monitor or 'memory_pressure' command"
+    
     log_success "Memory management optimized."
-}
+    log_warn "Some memory optimizations may be reset after system restart."
 
 # Function to optimize storage
 optimize_storage() {

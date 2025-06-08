@@ -62,6 +62,7 @@ log_error() {
 
 # Function to display usage
 usage() {
+    local exit_code=${1:-1}
     echo "Usage: $0 [OPTION]"
     echo "Tune macOS for AI/ML performance."
     echo ""
@@ -72,7 +73,7 @@ usage() {
     echo "  --help     Display this help message."
     echo ""
     echo "Note: Applying optimizations will prompt for confirmation before making changes."
-    exit 1
+    exit "${exit_code}"
 }
 
 # Function to ask for user confirmation
@@ -142,7 +143,8 @@ backup_all_defaults() {
 
 # Function to restore defaults settings from a backup file
 restore_all_defaults() {
-    local latest_backup_file=$(ls -t "${BACKUP_DIR}"/defaults_backup_*.plist 2>/dev/null | head -n 1)
+    local latest_backup_file
+    latest_backup_file=$(find "${BACKUP_DIR}" -name "defaults_backup_*.plist" -type f -exec ls -t {} + 2>/dev/null | head -n 1)
 
     if [[ -z "${latest_backup_file}" ]]; then
         log_error "No backup file found in ${BACKUP_DIR}. Please run with --backup first."
@@ -151,10 +153,14 @@ restore_all_defaults() {
     log_info "Restoring macOS defaults settings from ${latest_backup_file}..."
 
     while IFS= read -r line; do
-        local domain=$(echo "${line}" | awk '{print $1}')
-        local key=$(echo "${line}" | awk '{print $2}')
-        local type=$(echo "${line}" | awk '{print $3}')
-        local value=$(echo "${line}" | cut -d' ' -f4-)
+        local domain
+        local key
+        local type
+        local value
+        domain=$(echo "${line}" | awk '{print $1}')
+        key=$(echo "${line}" | awk '{print $2}')
+        type=$(echo "${line}" | awk '{print $3}')
+        value=$(echo "${line}" | cut -d' ' -f4-)
 
         if [[ -n "${domain}" && -n "${key}" && -n "${type}" && -n "${value}" ]]; then
             log_info "Restoring: defaults write ${domain} ${key} ${type} ${value}"
@@ -328,7 +334,7 @@ display_critical_recommendations() {
 # --- Main Script Execution ---
 main() {
     if [[ "$#" -eq 0 || "$1" == "--help" ]]; then
-        usage
+        usage 0
     fi
 
     case "$1" in
@@ -361,8 +367,7 @@ main() {
             restore_all_defaults
             ;;
         *)
-            log_error "Invalid option: $1"
-            usage
+            log_error "Invalid option: $1. Use --help for usage information."
             ;;
     esac
 }

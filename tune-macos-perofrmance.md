@@ -2,7 +2,16 @@
 
 ## 1. Introduction
 
-This document outlines the requirements for a macOS performance tuning script specifically designed for AI/ML developers. The goal is to optimize macOS for demanding AI/ML workloads, ensuring maximum performance, stability, and an efficient development environment. This script will automate various system adjustments, freeing developers to focus on their core tasks.
+This document outlines the requirements and implementation details for a macOS performance tuning script specifically designed for AI/ML developers. The script has been implemented as `tune_macos_performance.sh` (v1.1+) and optimizes macOS for demanding AI/ML workloads, ensuring maximum performance, stability, and an efficient development environment.
+
+**Recent Enhancements (v1.1+):**
+- Complete system animation removal for maximum responsiveness
+- Extended DNS caching to 72 hours for improved network performance
+- Comprehensive backup system covering all modified settings
+- Enhanced safety features with user confirmation prompts
+- Detailed logging and reversibility options
+
+The script automates various system adjustments, freeing developers to focus on their core tasks while providing critical manual recommendations for the highest performance gains.
 
 ## 2. Target Audience
 
@@ -41,8 +50,8 @@ The script should include, but not be limited to, the following features:
     - Clear temporary files and logs.
 
 ### 4.2. Network Optimizations
-- **DNS Caching:** Optimize DNS resolution settings by increasing cache time and size.
-- **Network Buffer Tuning:** Adjust TCP/IP buffer sizes for high-throughput data transfers.
+- **DNS Caching:** Optimize DNS resolution settings by increasing cache time to 72 hours (259200 seconds) for improved performance.
+- **Network Buffer Tuning:** Provide guidance on TCP/IP buffer optimization (removed aggressive tuning as it can be counterproductive).
 
 ### 4.3. Developer Tooling Integration
 - **Python Environment Optimization:**
@@ -59,7 +68,16 @@ The script should include, but not be limited to, the following features:
     - Guidance on using `nice` and `renice` to adjust process priorities for ML workloads.
 
 ### 4.4. User Interface & Experience
-- **Animation Reduction:** Disable or reduce UI animations (e.g., `toggle_animations.sh` functionality).
+- **Complete Animation Removal:** Comprehensively disable all system animations for maximum performance:
+  - Dock animations (autohide, expose, springboard, launchpad)
+  - Window and application animations (resize, automatic animations)
+  - Finder animations (all file operations)
+  - Mail animations (reply and send)
+  - Safari animations (initial layout delay)
+  - System-wide visual effects (transparency, motion)
+  - Mission Control and Spaces animations
+  - Quick Look animations
+  - Notification Center animations
 - **Notification Management:** Minimize disruptive notifications during active development.
 
 ### 4.5. System Maintenance & Cleanup
@@ -68,8 +86,11 @@ The script should include, but not be limited to, the following features:
 
 ### 4.6. Safety and Control Features
 - **User Confirmation:** Prompt for user confirmation before applying any system-level changes.
-- **Backup:** Create a backup of current macOS defaults settings before making modifications.
-- **Restore:** Provide an option to restore macOS settings from a previously created backup.
+- **Comprehensive Backup:** Create a backup of all macOS defaults settings before making modifications, including:
+  - All animation-related settings across system components
+  - DNS caching configurations
+  - CPU and memory management settings
+- **Complete Restore:** Provide an option to restore all macOS settings from a previously created backup with full reversibility.
 
 ## 5. Non-Functional Requirements
 
